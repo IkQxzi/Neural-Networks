@@ -1,7 +1,7 @@
 import numpy as np 
-import random
+from tensorflow.keras.datasets import mnist
 
-np.random.seed(5)
+np.random.seed(5) # remember to disable
 
 # add chain rule 
 class LayerDense():
@@ -12,23 +12,26 @@ class LayerDense():
         self.biases = np.zeros((1, n_neurons))
 
     def forward(self, inputs):
-        self.outputs = np.dot(inputs, self.weights) + self.biases # np.dot avoids for loop
         self.inputs = inputs # (batch_size, n_inputs)
+        self.outputs = np.dot(inputs, self.weights) + self.biases # np.dot avoids for loop
 
-    def backward(self, dvalues):
-        self.dweights = np.dot(self.inputs, dvalues)
-        self.dbiases = np.dot(np.full((self.biases.shape), 1), dvalues)
+    def backward(self, chain_dvalues):
+        partial_dweights = self.inputs # for clarity, may remove for memory efficiency
+        self.dweights = np.dot(partial_dweights, chain_dvalues)
+
+        partial_dbiases = np.full((self.biases.shape), 1)
+        self.dbiases = np.dot(partial_dbiases, chain_dvalues) # should they use the same chain_dvalues?
 
 
 class ActivationReLU():
 
     def forward(self, inputs):
         self.inputs = inputs # (batch_size, n_inputs)
-
         self.outputs = np.maximum(0, inputs)
 
-    def backward(self, dvalues):
-        self.dvalues = np.minimum(1, self.outputs)
+    def backward(self, chain_dvalues):
+        partial_dvalues = np.minimum(1, self.outputs)
+        self.dvalues = np.dot(partial_dvalues, chain_dvalues)
         # check the maths on this one
 
 
@@ -40,9 +43,18 @@ class ActivationSoftmax():
         exp_values = np.exp(self.inputs)
         self.outputs = exp_values / np.sum(exp_values, axis=1, keepdims=True) # axis 1 only sums each batch
 
-    def backward(self):
-        self.dvalues = self.outputs * (1-self.outputs)
+    def backward(self, chain_dvalues):
+        partial_dvalues = self.outputs * (1-self.outputs)
+        self.dvalues = np.dot(partial_dvalues, chain_dvalues)
     
+
+class LossCategoricalCrossEntropy():
+
+    def calculate(outputs, target_classes):
+        # multiply 1 hot vector by outputs, then -log(ans)
+        # might need to transpose one of the matrices
+        self.loss = -1 * np.log(np.dot(outputs, target_classes))
+        # log scaling encourages drastic changes when loss is large
 
 def dashes(length=20):
     out_str = ""
@@ -59,10 +71,26 @@ layer1_neurons = 16
 layer2_neurons = 8
 layer3_neurons = 4
 
+
+# -----------------------------------------------------------------------
+# ---------------------------- data handling ----------------------------- 
+# -----------------------------------------------------------------------
+
 # creating batch dataset to prepare for batch inputs
 mock_data = 0.10 * np.random.randn(batch_size, data_size)
 print(f"{dashes(26)} mock data {mock_data.shape} {dashes(26)} \n{mock_data[0]}\n")
 
+# MNIST data:
+
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+X_train = X_train.reshape(-1, 28 * 28).astype("float32") / 255.0
+X_test = X_test.reshape(-1, 28 * 28).astype("float32") / 255.0
+
+from tensorflow.keras.utils import to_categorical
+y_train = to_categorical(y_train, 10)  # 10 classes for MNIST
+y_test = to_categorical(y_test, 10)
+
+print(X_train)
 
 # -----------------------------------------------------------------------
 # ---------------------------- forward pass ----------------------------- 
@@ -92,7 +120,13 @@ print(f"{dashes()} Layer [3] {layer3.outputs.shape} {dashes()}\n{activation3.out
 # ---------------------------- backward pass ---------------------------- 
 # -----------------------------------------------------------------------
 
+# loss function
+
+
+
 # do backwards
+
+output_vector = ([0.7, 0.1, 0.1, 0.1])
 
 activation3.backward()
 layer3.backward()
