@@ -1,6 +1,6 @@
 A **neural network** built **from scratch** in **Python**, using only necessary libraries like Numpy & Cupy - without all the bells and whistles of others like TensorFlow & Keras.
 To do this, I plan to **learn the underlying concepts** from videos like [This series by 3Blue1Brown](https://www.3blue1brown.com/topics/neural-networks). I also will take some inspiration from [this book](https://nnfs.io/) by Sentdex. I _could_ simply follow along with the book, but I wish to **understand the theory** enough to create a network **on my own.**
-The **end goal** here is to create a **facial recognition network **which integrates with my computer's camera to provide a '**Face ID'-like biometric authentication.**
+The **end goal** here is to create a **facial recognition network **which integrates with my computer's camera to provide a **'Face ID'-like biometric authentication.**
 
 **To achieve this, I look to reach these distinct milestones:**
 1. Create a functional dense network to classify handwritten digits (the "Hello World" of machine learning), using only numpy.
@@ -11,6 +11,6 @@ The **end goal** here is to create a **facial recognition network **which integr
 To help others who wish to undertake the daunting task of becoming proficient in machine learning, I will **add to this documentation** - covering aspects such as: 
 - the **justifications** behind conventional **activation** and **loss functions,**
 - the **intuitions** behind **backpropogation** & **gradient descent,**
-- the **applications** for neural networks (and machine learning in general),
+- the **applications** for neural networks (and machine learning in general).
 
 Check back here in future if you wish to follow along, or maybe just learn something interesting!
