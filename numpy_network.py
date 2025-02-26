@@ -20,14 +20,16 @@ class LayerDense():
     # what in the calculus
     def backward(self, forward_dvals):
         
-        self.dweights = np.dot(forward_dvals, self.inputs)
+        # self.dweights = np.dot(forward_dvals, self.inputs)
+        self.dweights = np.dot(self.inputs.T, forward_dvals)
         print(f"inputs: {self.inputs.shape}")
         print(f"dweights: {self.dweights.shape}")
 
-        self.dbiases = forward_dvals
+        self.dbiases = np.sum(forward_dvals, axis=0) # sums batch-wise
         print(f"dbiases: {self.dbiases.shape}")
 
-        self.back_dvals = np.dot(self.weights, forward_dvals)
+        # self.back_dvals = np.dot(self.weights, forward_dvals)
+        self.back_dvals = np.dot(forward_dvals, self.weights.T)
         print(f"back_dvals: {self.back_dvals.shape}")
         # self.dbiases = np.dot(partial_dbiases, forward_dvals) # should they use the same forward_dvals?
 
@@ -47,7 +49,7 @@ class ActivationReLU():
         print(f"relu_dvals: {relu_dvals.shape}")
 
 
-        self.dvals = np.dot(forward_dvals, relu_dvals)
+        self.dvals = forward_dvals * relu_dvals
         print(f"dvals: {self.dvals.shape}")
         # check the maths on this one - hasnt broken yet so probably right
 
@@ -108,8 +110,7 @@ class ActivationSoftmax():
         print(f"off_diag_dvals: {off_diag_dvals.shape}")
 
         softmax_dvals = diag_dvals + off_diag_dvals
-        self.dvals = np.dot(forward_dvals, softmax_dvals)
-        print(softmax_dvals[0])
+        self.dvals = (softmax_dvals.T * forward_dvals).T
         print(f"self.dvals: {self.dvals.shape}")
     
 
@@ -134,7 +135,7 @@ def dashes(length=20):
 
 
 # -----------------------------------------------------------------------
-# ---------------------------- data handling ----------------------------- 
+# ---------------------------- data & __init__ ----------------------------- 
 # -----------------------------------------------------------------------
 
 # creating batch dataset to prepare for batch inputs
@@ -169,15 +170,17 @@ y_batch = y_batch # may need to transpose
 
 input_dim = X_train.shape[1]
 
-# -----------------------------------------------------------------------
-# ---------------------------- forward pass ----------------------------- 
-# -----------------------------------------------------------------------
-
 layer1_neurons = 784
 layer2_neurons = 16
 layer3_neurons = 10
 
 layer1 = LayerDense(input_dim, layer1_neurons)
+
+
+# -----------------------------------------------------------------------
+# ---------------------------- forward pass ----------------------------- 
+# -----------------------------------------------------------------------
+
 layer1.forward(X_batch[0])
 activation1 = ActivationReLU()
 activation1.forward(layer1.outputs)
@@ -207,19 +210,13 @@ print(f"biases: {layer3.biases.shape}\n")
 
 # -----------------------------------------------------------------------
 # ---------------------------- backward pass ---------------------------- 
-# ---------------------------z--------------------------------------------
+# ------------------------------------------------------------------------
 
 # loss function
 
 loss_function = LossCategoricalCrossEntropy()
 loss_function.calculate(activation3.outputs, y_batch[0])
 # activation3: [batch_size, output_dim], same for y_train/batch => must be transposed
-
-'''
-dz3_dn3 = 1, n3 > 0
-
-'''
-
 
 # do backwards
 
@@ -233,15 +230,17 @@ activation3.backward(y_batch[0], loss_function.dloss)
 layer3.backward(activation3.dvals)
 
 # learn calculus, what is going on here
+# calculus learnt
 print(f"{dashes()} Layer [2] [backward pass] {dashes()}")
 activation2.backward(layer3.back_dvals)
 layer2.backward(activation2.dvals)
 
 print(f"{dashes()} Layer [1] [backward pass] {dashes()}")
-activation1.backward()
-layer1.backward()
+activation1.backward(layer2.back_dvals)
+layer1.backward(activation1.dvals)
 
-print(f"dSoftmax: {activation3.dvals[0]}")
-
-
+# order passes into functions
+# only print 1st & last pass
+# print & plot accuracy, loss, etc
+# SGD Optimiser
 
