@@ -55,11 +55,13 @@ class ActivationReLU():
 
         # to propogate to previous layer
         # should be 1 (if dvals > 0)
-        self.relu_dvals = self.inputs / self.inputs
+        # replace nan with 0
+        self.relu_dvals = np.nan_to_num(self.inputs / self.inputs)
 
         self.dvals = forward_dvals * self.relu_dvals
         # check the maths on this one - hasnt broken yet so probably right
         # is probably wrong
+        # should probably then use the dot product
 
 
 
@@ -70,6 +72,7 @@ class ActivationSoftmax():
 
         max_vals = np.max(self.inputs, axis=1, keepdims=True)
         # must be done for numerical stability (otherwise returns inf)
+
         exp_values = np.exp(self.inputs - max_vals) 
         exp_values = np.clip(exp_values, 1e-6, 1e6) # clip to avoid log(0) (which is infinite)
         self.outputs = exp_values / np.sum(exp_values, axis=1, keepdims=True) # axis 1 sums batch-wise
@@ -264,6 +267,7 @@ def backward_pass(network, output_arr, target_classes):
     print(f"dweights: {layer1.dweights[0][:10]}")
     print(f"dbiases: {layer1.dbiases[:10]}")
 
+
 def update_params(network_layers, optimiser, learning_rate):
     
     layer1, layer2, layer3 = network_layers
@@ -312,6 +316,8 @@ def initialise_mnist_dataset(batch_size):
 
 def main():
 
+    # use dot product for relu backward
+
     input_dims = 28 * 28
     network_neurons = [784, 16, 10]
     batch_size = 32 # will play around with other values depending on performance
@@ -320,8 +326,18 @@ def main():
     network, optimiser = initialise_network(network_neurons, input_dims)
     network_layers = network[:-1][::2]
     X_train, y_train, X_test, y_test = initialise_mnist_dataset(batch_size) # all in batches
+ 
+    train_output = forward_pass(network, X_train[0], y_train[0])
+    backward_pass(network, train_output, y_train[0])
+
+    update_params(network_layers, optimiser, learning_rate)
+
+    input('Continue...')
+
 
     for batch_num, X_batch in enumerate(X_train):
+
+        # np.savetxt(f'inputs{batch_num}', X_batch[0])
 
         train_output = forward_pass(network, X_batch, y_train[batch_num])
         backward_pass(network, train_output, y_train[batch_num])
